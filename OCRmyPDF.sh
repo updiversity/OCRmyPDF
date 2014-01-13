@@ -166,6 +166,10 @@ parallelversion=`parallel --minversion 0`
 	&& echo "Please install GNU parallel ${reqparallelversion} or newer (currently installed version is ${parallelversion})" && exit $EXIT_MISSING_DEPENDENCY
 
 
+# ensure pdftoppm is provided by poppler-utils, not the older xpdf version
+! pdftoppm -v 2>&1 | grep -q 'Poppler' && echo "Please remove xpdf and install poppler-utils. Exiting..." && $EXIT_MISSING_DEPENDENCY
+
+
 # Display the version of the tools if log level is LOG_DEBUG
 if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	echo "--------------------------------"
@@ -204,19 +208,16 @@ fi
 
 # Initialize path to temporary files
 today=$(date +"%Y%m%d_%H%M")
-fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*//')
-TMP_FLD="${TMP}/$today.filename.$fld"
+fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')
+prefix="${today}.filename.${fld}"
+TMP_FLD=`TMPDIR=${TMP} mktemp -d -t "${prefix}"`
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
 FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
 FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
 FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
 
 # Create tmp folder
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Creating temporary folder: \"$TMP_FLD\""
-rm -r -f "${TMP_FLD}"
-mkdir -p "${TMP_FLD}"
-
-
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Created temporary folder: \"$TMP_FLD\""
 
 
 # get the size of each pdf page (width / height) in pt (inch*72)
