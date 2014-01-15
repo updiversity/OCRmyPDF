@@ -209,13 +209,22 @@ fi
 
 
 
-# Initialize path to temporary files
-today=$(date +"%Y%m%d_%H%M")
-fld=$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')
-prefix="${today}.filename.${fld}"
-TMP_FLD=`TMPDIR=${TMP} mktemp -d -t "${prefix}"`			# create temporary sub-folder in $TMP folder
+# Initialize path to temporary files using mktemp
+
+# Goal: save tmp file in a sub-folder of the $TMPDIR environment variable (or in "/tmp" if unset)
+# Unfortunately, Linux mktemp is not compatible with FreeBSD/OSX mktemp
+# Linux version requires no arg
+# FreeBSD requires '-t prefix' to be used so that $TMPDIR is taken into account
+# But in Linux '-t template' is handled differently than in FreeBSD
+# Therefore different calls must be used for Linux and for FreeBSD
+prefix="$(date +"%Y%m%d_%H%M").filename.$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')"	# prefix made of date, time and pdf file name without extension
+TMP_FLD=`mktemp -d 2>/dev/null || mktemp -d -t "${prefix}" 2>/dev/null`				# try Linux syntax first, if it fails try FreeBSD/OSX			
 if [ $? -ne 0 ]; then
-	echo "Could not create folder for temporary files. Please ensure you have sufficient right and \"$TMP\" exists"
+	if [ -z "$TMPDIR" ]; then
+		echo "Could not create folder for temporary files. Please ensure you have sufficient right and \"/tmp\" exists"
+	else
+		echo "Could not create folder for temporary files. Please ensure you have sufficient right and \"$TMPDIR\" exists"
+	fi
 	exit $EXIT_FILE_ACCESS_ERROR
 fi
 FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
@@ -235,7 +244,7 @@ sed '/^$/d' "$FILE_TMP" | awk '{printf "%04d %s\n", NR, $0}' > "$FILE_PAGES_INFO
 numpages=`tail -n 1 "$FILE_PAGES_INFO" | cut -f1 -d" "`
 
 # process each page of the input pdf file
-parallel $JOBS -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
+parallel $JOBS --gnu -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" "$numpages" "$TMP_FLD" \
 	"$VERBOSITY" "$LAN" "$KEEP_TMP" "$PREPROCESS_DESKEW" "$PREPROCESS_CLEAN" "$PREPROCESS_CLEANTOPDF" "$OVERSAMPLING_DPI" \
 	"$PDF_NOIMG" "$TESS_CFG_FILES" "$FORCE_OCR" < "$FILE_PAGES_INFO"
 ret_code="$?"
