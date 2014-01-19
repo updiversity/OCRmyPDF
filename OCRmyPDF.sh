@@ -42,7 +42,7 @@ Usage: OCRmyPDF.sh  [-h] [-v] [-g] [-k] [-d] [-c] [-i] [-o dpi] [-f] [-l languag
      (which should not be the case for PDF files built from scnanned images) 
 -l : Set the language of the PDF file in order to improve OCR results (default "eng")
      Any language supported by tesseract is supported (Tesseract uses 3-character ISO 639-2 language codes)
-     Multiple languages may be specified, separated by plus characters.
+     Multiple languages may be specified, separated by '+' characters.
 -j : Maximum number of parallel tasks to run.
 -C : Pass an additional configuration file to the tesseract OCR engine.
      (this option can be used more than once)
@@ -114,8 +114,7 @@ done
 # Remove the optional arguments parsed above.
 shift $((OPTIND-1))
 
-# Check if the number of mandatory parameters
-# provided is as expected
+# Check if the number of mandatory parameters provided is as expected
 if [ "$#" -ne "2" ]; then
 	echo "Exactly two mandatory argument shall be provided ($# arguments provided)"
 	usage
@@ -145,7 +144,6 @@ cd "`dirname $0`"
 ! command -v pdfimages > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdftoppm > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v pdffonts > /dev/null && echo "Please install poppler-utils. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
-! command -v pdftk > /dev/null && echo "Please install pdftk. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 [ $PREPROCESS_CLEAN -eq 1 ] && ! command -v unpaper > /dev/null && echo "Please install unpaper. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v tesseract > /dev/null && echo "Please install tesseract and tesseract-data. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
 ! command -v python2 > /dev/null && echo "Please install python v2.x. Exiting..." && exit $EXIT_MISSING_DEPENDENCY
@@ -159,8 +157,10 @@ cd "`dirname $0`"
 # older versions are known to produce malformed hocr output and should not be used
 reqtessversion="3.02.02"
 tessversion=`tesseract -v 2>&1 | grep "tesseract" | sed s/[^0-9.]//g`
-! [ $((`echo $tessversion | sed s/[.]//g`-`echo $reqtessversion | sed s/[.]//g`)) -ge 0 ] > /dev/null \
+tesstooold=$(echo "`echo $tessversion | sed s/[.]//2`-`echo $reqtessversion | sed s/[.]//2` < 0" | bc)
+[ "$tesstooold" -eq "1" ] \
 	&& echo "Please install tesseract ${reqtessversion} or newer (currently installed version is ${tessversion})" && exit $EXIT_MISSING_DEPENDENCY
+
 # ensure the right GNU parallel version is installed
 # older version do not support -q flag (required to escape special characters)
 reqparallelversion="20130222"
@@ -168,9 +168,9 @@ parallelversion=`parallel --minversion 0`
 ! parallel --minversion "$reqparallelversion" > /dev/null \
 	&& echo "Please install GNU parallel ${reqparallelversion} or newer (currently installed version is ${parallelversion})" && exit $EXIT_MISSING_DEPENDENCY
 
-
 # ensure pdftoppm is provided by poppler-utils, not the older xpdf version
 ! pdftoppm -v 2>&1 | grep -q 'Poppler' && echo "Please remove xpdf and install poppler-utils. Exiting..." && $EXIT_MISSING_DEPENDENCY
+
 
 
 # Display the version of the tools if log level is LOG_DEBUG
@@ -186,9 +186,6 @@ if [ $VERBOSITY -ge $LOG_DEBUG ]; then
 	pdfimages -v
 	pdftoppm -v
 	pdffonts -v
-	echo "--------------------------------"
-	echo "pdftk version:"
-	pdftk --version
 	echo "--------------------------------"
 	echo "unpaper version:"
 	unpaper --version
@@ -209,8 +206,19 @@ fi
 
 
 
-# Initialize path to temporary files using mktemp
+# check if the languages passed to tesseract are all supported
+for currentlan in `echo "$LAN" | sed 's/+/ /g'`; do
+	if ! tesseract --list-langs 2>&1 | grep "^$currentlan\$" > /dev/null; then
+		echo "The language \"$currentlan\" is not supported by tesseract."
+		tesseract --list-langs 2>&1 | tr '\n' ' '; echo
+		echo "Exiting..."
+		exit $EXIT_BAD_ARGS
+	fi
+done
 
+
+
+# Initialize path to temporary files using mktemp
 # Goal: save tmp file in a sub-folder of the $TMPDIR environment variable (or in "/tmp" if unset)
 # Unfortunately, Linux mktemp is not compatible with FreeBSD/OSX mktemp
 # Linux version requires no arg
@@ -229,15 +237,14 @@ if [ $? -ne 0 ]; then
 	fi
 	exit $EXIT_FILE_ACCESS_ERROR
 fi
-FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
-FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
-FILE_OUTPUT_PDF_CAT="${TMP_FLD}/ocred.pdf"				# concatenated OCRed PDF files
-FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
-
-# Create tmp folder
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Created temporary folder: \"$TMP_FLD\""
 
-# get the size of each pdf page (width / height) in pt (inch*72)
+FILE_TMP="${TMP_FLD}/tmp.txt"						# temporary file with a very short lifetime (may be used for several things)
+FILE_PAGES_INFO="${TMP_FLD}/pages-info.txt"				# for each page: page #; width in pt; height in pt
+FILE_VALIDATION_LOG="${TMP_FLD}/pdf_validation.log"			# log file containing the results of the validation of the PDF/A file
+
+
+# get the size of each pdf page (width / height) in pt (i.e. inch/72)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Input file: Extracting size of each page (in pt)"
 ! identify -format "%w %h\n" "$FILE_INPUT_PDF" > "$FILE_TMP" \
 	&& echo "Could not get size of PDF pages. Exiting..." && exit $EXIT_BAD_INPUT_FILE
@@ -252,17 +259,12 @@ parallel $JOBS --gnu -q -k --halt-on-error 1 "$OCR_PAGE" "$FILE_INPUT_PDF" "{}" 
 ret_code="$?"
 [ $ret_code -ne 0 ] && exit $ret_code 
 
-# concatenate all pages
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages"
-! pdftk "${TMP_FLD}/"*ocred*.pdf cat output "$FILE_OUTPUT_PDF_CAT" \
-	&& echo "Could not concatenate individual PDF pages (\"${TMP_FLD}/*-ocred.pdf\") to one file. Exiting..." && exit $EXIT_OTHER_ERROR
-
-# convert the pdf file to match PDF/A format
-[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Converting to PDF/A" 
+# concatenate all pages and convert the pdf file to match PDF/A format
+[ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Concatenating all pages to the final PDF/A file" 
 ! gs -dQUIET -dPDFA -dBATCH -dNOPAUSE -dUseCIEColor \
 	-sProcessColorModel=DeviceCMYK -sDEVICE=pdfwrite -sPDFACompatibilityPolicy=2 \
-	-sOutputFile="$FILE_OUTPUT_PDFA" "$FILE_OUTPUT_PDF_CAT" 1> /dev/null 2> /dev/null \
-	&& echo "Could not convert PDF file \"$FILE_OUTPUT_PDF_CAT\" to PDF/A. Exiting..." && exit $EXIT_OTHER_ERROR
+	-sOutputFile="$FILE_OUTPUT_PDFA" "${TMP_FLD}/"*ocred*.pdf 1> /dev/null 2> /dev/null \
+	&& echo "Could not concatenate all pages to the final PDF/A file. Exiting..." && exit $EXIT_OTHER_ERROR
 
 # validate generated pdf file (compliance to PDF/A)
 [ $VERBOSITY -ge $LOG_DEBUG ] && echo "Output file: Checking compliance to PDF/A standard" 
