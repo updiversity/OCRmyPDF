@@ -218,6 +218,8 @@ fi
 # But in Linux '-t template' is handled differently than in FreeBSD
 # Therefore different calls must be used for Linux and for FreeBSD
 prefix="$(date +"%Y%m%d_%H%M").filename.$(basename "$FILE_INPUT_PDF" | sed 's/[.][^.]*$//')"	# prefix made of date, time and pdf file name without extension
+TMPDIR='/Volumes/home/tmp'
+export TMPDIR
 TMP_FLD=`mktemp -d 2>/dev/null || mktemp -d -t "${prefix}" 2>/dev/null`				# try Linux syntax first, if it fails try FreeBSD/OSX			
 if [ $? -ne 0 ]; then
 	if [ -z "$TMPDIR" ]; then
