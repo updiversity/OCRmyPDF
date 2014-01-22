@@ -153,7 +153,7 @@ elif [ "$colorspaceCurImg" = "Gray" ]; then					# if gray
 	opt="-gray"
 fi
 curImgPixmap="$TMP_FLD/$page.$ext"
-curImgPixmapDeskewed="$TMP_FLD/$page.deskewed.$ext"
+curImgPixmapDeskewed="$TMP_FLD/$page.deskewed.tiff"
 curImgPixmapClean="$TMP_FLD/$page.cleaned.$ext"
 
 # extract current page as image with correct orientation and resolution
