@@ -73,12 +73,20 @@ lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
 lept.pixScale.restype = PIX
 lept.pixDeskew.argtypes = [PIX, C.c_int32]
 lept.pixDeskew.restype = PIX
+lept.pixOrientDetectDwa.argtypes = [PIX, C.POINTER(C.c_float), C.POINTER(C.c_float), C.c_int32, C.c_int32]
+lept.pixOrientDetectDwa.restype = C.c_int32
+lept.pixMirrorDetectDwa.argtypes = [PIX, C.POINTER(C.c_float), C.c_int32, C.c_int32]
+lept.pixMirrorDetectDwa.restype = C.c_int32
+lept.makeOrientDecision.argtypes = [C.c_float, C.c_float, C.c_float, C.c_float, C.POINTER(C.c_int32), C.c_int32]
+lept.makeOrientDecision.restype = C.c_int32
 lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
 lept.pixWriteImpliedFormat.restype = C.c_int32
 lept.pixDestroy.argtypes = [C.POINTER(PIX)]
 lept.pixDestroy.restype = None
 lept.getLeptonicaVersion.argtypes = []
 lept.getLeptonicaVersion.restype = C.c_char_p
+
+TEXT_ORIENTATION = ['UNKNOWN', 'UP', 'LEFT', 'DOWN', 'RIGHT']
 
 
 class LeptonicaErrorTrap(object):
@@ -156,7 +164,8 @@ def pixDeskew(pix, reduction_factor=0):
     """Returns the deskewed pix object.
 
     A clone of the original is returned when the algorithm cannot find a skew
-    angle with sufficient confidence.
+    angle with sufficient confidence.  The skew angle is assumed to be no more
+    than ±6°.
 
     reduction_factor -- amount to downsample (0 for default) when searching
         for skew angle
@@ -164,6 +173,42 @@ def pixDeskew(pix, reduction_factor=0):
     """
     with LeptonicaErrorTrap():
         return lept.pixDeskew(pix, reduction_factor)
+
+
+def pixOrientDetectDwa(pix, mincount=0, debug=0):
+    """Returns confidence measure that the image is oriented correctly.
+
+    Use makeOrientDecision to let Leptonica translate the confidence
+    measurements into the recommended rotation.
+
+    pix - deskewed 1 bpp English text, 150-300 ppi
+
+    """
+    up_confidence = C.c_float(0.0)
+    left_confidence = C.c_float(0.0)
+
+    with LeptonicaErrorTrap():
+        result = lept.pixOrientDetectDwa(pix, C.byref(up_confidence), C.byref(left_confidence),
+                                         mincount, debug)
+        if result == 0:
+            return (up_confidence.value, left_confidence.value)
+        return None
+
+
+def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0):
+    """Returns orientation of text given confidence measure."""
+
+    up_confidence = C.c_float(confidence[0])
+    left_confidence = C.c_float(confidence[1])
+    orient = C.c_int32(-1)
+
+    with LeptonicaErrorTrap():
+        result = lept.makeOrientDecision(up_confidence, left_confidence, min_up_confidence,
+                                         min_ratio, C.byref(orient), debug)
+        if result == 0:
+            assert 0 <= orient.value < len(TEXT_ORIENTATION)
+            return TEXT_ORIENTATION[orient.value]
+        return None
 
 
 def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
@@ -263,7 +308,7 @@ def _test_output(mode, extension, im_format):
 
     with NamedTemporaryFile(prefix='test-lept-pnm', suffix=extension, delete=True) as tmpfile:
         im = Image.new(mode=mode, size=(100, 100))
-        im.save(tmpfile)
+        im.save(tmpfile, im_format)
 
         pix = pixRead(tmpfile.name)
         pixWriteImpliedFormat(tmpfile.name, pix)
@@ -282,4 +327,22 @@ def test_pnm_output():
               ['RGB', '.ppm', 'PPM']]
     for param in params:
         _test_output(*param)
+
+def test_orientation():
+    from PIL import Image
+    from tempfile import NamedTemporaryFile
+
+    im = Image.open('test/test-bw.pbm')
+    for rotation in (0, 90, 180, 270):
+        rotated_im = im.rotate(rotation)
+        with NamedTemporaryFile(prefix="test-orientation", suffix=".pbm", delete=True) as tmpfile:
+            rotated_im.save(tmpfile, "PPM")
+
+            pix = pixRead(tmpfile.name)
+            confidence = pixOrientDetectDwa(pix, debug=1)
+            stderr(confidence)
+            decision = makeOrientDecision(confidence, debug=1)
+            stderr(decision)
+
+
 
