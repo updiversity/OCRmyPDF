@@ -67,6 +67,22 @@ class _PIX(C.Structure):
 
 PIX = C.POINTER(_PIX)
 
+lept.pixDestroy.argtypes = [C.POINTER(PIX)]
+lept.pixDestroy.restype = None
+
+
+def PIX__del__(self):
+    """Destroy a pix object.
+
+    Function signature is pixDestroy(struct Pix **), hence C.byref() is used to
+    pass the address of the pointer.
+
+    """
+    lept.pixDestroy(C.byref(self))
+
+PIX.__del__ = PIX__del__
+
+
 lept.pixRead.argtypes = [C.c_char_p]
 lept.pixRead.restype = PIX
 lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
@@ -83,8 +99,6 @@ lept.makeOrientDecision.argtypes = [C.c_float, C.c_float, C.c_float, C.c_float, 
 lept.makeOrientDecision.restype = C.c_int32
 lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
 lept.pixWriteImpliedFormat.restype = C.c_int32
-lept.pixDestroy.argtypes = [C.POINTER(PIX)]
-lept.pixDestroy.restype = None
 lept.getLeptonicaVersion.argtypes = []
 lept.getLeptonicaVersion.restype = C.c_char_p
 
@@ -246,17 +260,6 @@ def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
         move(filename, filename[:-4])   # Remove .pnm suffix
 
 
-def pixDestroy(pix):
-    """Destroy the pix object.
-
-    Function signature is pixDestroy(struct Pix **), hence C.byref() to pass
-    the address of the pointer.
-
-    """
-    with LeptonicaErrorTrap():
-        lept.pixDestroy(C.byref(pix))
-
-
 def getLeptonicaVersion():
     """Get Leptonica version string.
 
@@ -286,8 +289,6 @@ def deskew(args):
     except LeptonicaIOError:
         stderr("Failed to open destination file: %s" % args.outfile)
         sys.exit(5)
-    pixDestroy(pix_source)
-    pixDestroy(pix_deskewed)
 
 
 if __name__ == '__main__':
@@ -322,7 +323,6 @@ def _test_output(mode, extension, im_format):
 
         pix = pixRead(tmpfile.name)
         pixWriteImpliedFormat(tmpfile.name, pix)
-        pixDestroy(pix)
 
         im_roundtrip = Image.open(tmpfile.name)
         assert im_roundtrip.mode == im.mode, "leptonica mode differs"
@@ -357,6 +357,5 @@ def test_orientation():
                 "Expected to find a rotation of {0} by Leptonica wants to rotate by {1}".format(
                     rotation,
                     TEXT_ORIENTATION_ANGLES[decision] or "(no confidence)")
-            pixDestroy(pix)
 
 
