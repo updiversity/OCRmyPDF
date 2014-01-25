@@ -35,6 +35,7 @@ except Exception:
 
 
 class _PIXCOLORMAP(C.Structure):
+
     """struct PixColormap from Leptonica src/pix.h
     """
 
@@ -47,6 +48,7 @@ class _PIXCOLORMAP(C.Structure):
 
 
 class _PIX(C.Structure):
+
     """struct Pix from Leptonica src/pix.h
     """
 
@@ -82,31 +84,52 @@ def PIX__del__(self):
 
 PIX.__del__ = PIX__del__
 
-
+# I/O
 lept.pixRead.argtypes = [C.c_char_p]
 lept.pixRead.restype = PIX
-lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
-lept.pixConvertTo1.restype = PIX
-lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
-lept.pixScale.restype = PIX
-lept.pixDeskew.argtypes = [PIX, C.c_int32]
-lept.pixDeskew.restype = PIX
-lept.pixOrientDetectDwa.argtypes = [PIX, C.POINTER(C.c_float), C.POINTER(C.c_float), C.c_int32, C.c_int32]
-lept.pixOrientDetectDwa.restype = C.c_int32
-lept.pixMirrorDetectDwa.argtypes = [PIX, C.POINTER(C.c_float), C.c_int32, C.c_int32]
-lept.pixMirrorDetectDwa.restype = C.c_int32
-lept.makeOrientDecision.argtypes = [C.c_float, C.c_float, C.c_float, C.c_float, C.POINTER(C.c_int32), C.c_int32]
-lept.makeOrientDecision.restype = C.c_int32
 lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
 lept.pixWriteImpliedFormat.restype = C.c_int32
+
+# Conversion
+lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
+lept.pixConvertTo1.restype = PIX
+
+# Resampling
+lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
+lept.pixScale.restype = PIX
+
+# Skew
+lept.pixDeskew.argtypes = [PIX, C.c_int32]
+lept.pixDeskew.restype = PIX
+
+# Orientation
+lept.pixOrientDetectDwa.argtypes = [
+    PIX, C.POINTER(C.c_float), C.POINTER(C.c_float), C.c_int32, C.c_int32]
+lept.pixOrientDetectDwa.restype = C.c_int32
+lept.pixMirrorDetectDwa.argtypes = [
+    PIX, C.POINTER(C.c_float), C.c_int32, C.c_int32]
+lept.pixMirrorDetectDwa.restype = C.c_int32
+lept.makeOrientDecision.argtypes = [
+    C.c_float, C.c_float, C.c_float, C.c_float, C.POINTER(C.c_int32), C.c_int32]
+lept.makeOrientDecision.restype = C.c_int32
+
+# Orthogonal rotation
+lept.pixRotateOrth.argtypes = [PIX, C.c_int32]
+lept.pixRotateOrth.restype = PIX
+
+# Version
 lept.getLeptonicaVersion.argtypes = []
 lept.getLeptonicaVersion.restype = C.c_char_p
 
 TEXT_ORIENTATION = ['UNKNOWN', 'UP', 'LEFT', 'DOWN', 'RIGHT']
-TEXT_ORIENTATION_ANGLES = {'UNKNOWN': None, 'UP': 0, 'LEFT': 90, 'DOWN': 180, 'RIGHT': 270}
+TEXT_ORIENTATION_ANGLES = {
+    'UNKNOWN': None, 'UP': 0, 'LEFT': 90, 'DOWN': 180, 'RIGHT': 270}
+TEXT_ORIENTATION_ARROWS = {
+    'UNKNOWN': u'?', 'UP': u'↑', 'LEFT': u'←', 'DOWN': u'↓', 'RIGHT': u'→'}
 
 
 class LeptonicaErrorTrap(object):
+
     """Context manager to trap errors reported by Leptonica.
 
     Leptonica's error return codes are unreliable to the point of being
@@ -119,6 +142,7 @@ class LeptonicaErrorTrap(object):
     from Leptonica are also suppressed.
 
     """
+
     def __enter__(self):
         self.tmpfile = TemporaryFile()
 
@@ -212,8 +236,9 @@ def pixOrientDetectDwa(pix, mincount=0, debug=0):
     left_confidence = C.c_float(0.0)
 
     with LeptonicaErrorTrap():
-        result = lept.pixOrientDetectDwa(pix, C.byref(up_confidence), C.byref(left_confidence),
-                                         mincount, debug)
+        result = lept.pixOrientDetectDwa(
+            pix, C.byref(up_confidence), C.byref(left_confidence),
+            mincount, debug)
     if result != 0:
         raise LeptonicaError("pixOrientDetectDwa returned {0}".format(result))
     return (up_confidence.value, left_confidence.value)
@@ -227,8 +252,9 @@ def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0
     orient = C.c_int32(-1)
 
     with LeptonicaErrorTrap():
-        result = lept.makeOrientDecision(up_confidence, left_confidence, min_up_confidence,
-                                         min_ratio, C.byref(orient), debug)
+        result = lept.makeOrientDecision(
+            up_confidence, left_confidence, min_up_confidence,
+            min_ratio, C.byref(orient), debug)
     if result != 0:
         raise LeptonicaError("makeOrientDecision returned {0}".format(result))
     assert 0 <= orient.value < len(TEXT_ORIENTATION)
