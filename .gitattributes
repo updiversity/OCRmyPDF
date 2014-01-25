@@ -6,3 +6,10 @@
 *.jar	binary
 *.pdf	binary
 *.PDF	binary
+*.tif	binary
+*.tiff	binary
+*.png	binary
+*.pbm	binary
+*.pgm	binary
+*.ppm	binary
+*.pyc	binary
