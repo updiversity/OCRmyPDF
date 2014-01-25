@@ -214,9 +214,9 @@ def pixOrientDetectDwa(pix, mincount=0, debug=0):
     with LeptonicaErrorTrap():
         result = lept.pixOrientDetectDwa(pix, C.byref(up_confidence), C.byref(left_confidence),
                                          mincount, debug)
-        if result == 0:
-            return (up_confidence.value, left_confidence.value)
-        return None
+    if result != 0:
+        raise LeptonicaError("pixOrientDetectDwa returned {0}".format(result))
+    return (up_confidence.value, left_confidence.value)
 
 
 def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0):
@@ -229,10 +229,11 @@ def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0
     with LeptonicaErrorTrap():
         result = lept.makeOrientDecision(up_confidence, left_confidence, min_up_confidence,
                                          min_ratio, C.byref(orient), debug)
-        if result == 0:
-            assert 0 <= orient.value < len(TEXT_ORIENTATION)
-            return TEXT_ORIENTATION[orient.value]
-        return None
+    if result != 0:
+        raise LeptonicaError("makeOrientDecision returned {0}".format(result))
+    assert 0 <= orient.value < len(TEXT_ORIENTATION)
+
+    return TEXT_ORIENTATION[orient.value]
 
 
 def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
@@ -291,6 +292,22 @@ def deskew(args):
         sys.exit(5)
 
 
+def orient_check(*args):
+    """Report if input image is oriented correctly."""
+    try:
+        pix = pixRead(args.infile)
+    except LeptonicaIOError:
+        stderr("Failed to open file: %s" % args.infile)
+        sys.exit(2)
+
+    pix_test = pixConvertTo1(pix)
+
+    confidence = pixOrientDetectDwa(pix_test)
+    decision = makeOrientDecision(confidence)
+    if decision != "UP":
+        stderr("Warning: %s appears to be oriented with text facing %s", args.infile, decision)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description="Python wrapper to access Leptonica")
@@ -304,6 +321,12 @@ if __name__ == '__main__':
     parser_deskew.add_argument('infile', help='image to deskew')
     parser_deskew.add_argument('outfile', help='deskewed output image')
     parser_deskew.set_defaults(func=deskew)
+
+    parser_orient_check = subparsers.add_parser('orient-check')
+
+    parser_orient_check.add_argument('infile', help='file to check orientation')
+    parser_orient_check.add_argument('--mirror', help="check if image may be mirrored")
+    parser_orient_check.set_defaults(func=orient_check)
 
     args = parser.parse_args()
 
@@ -344,6 +367,7 @@ def test_orientation():
     from tempfile import NamedTemporaryFile
 
     im = Image.open('test/test-bw.png')
+    assert im.mode == '1', "This test requires a monochrome PNG"
     for rotation in (0, 90, 180, 270):
         rotated_im = im.rotate(rotation)
         with NamedTemporaryFile(prefix="test-orientation", suffix=".pbm", delete=True) as tmpfile:
