@@ -69,6 +69,8 @@ PIX = C.POINTER(_PIX)
 
 lept.pixRead.argtypes = [C.c_char_p]
 lept.pixRead.restype = PIX
+lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
+lept.pixConvertTo1.restype = PIX
 lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
 lept.pixScale.restype = PIX
 lept.pixDeskew.argtypes = [PIX, C.c_int32]
@@ -153,6 +155,13 @@ def pixRead(filename):
     """
     with LeptonicaErrorTrap():
         return lept.pixRead(filename.encode(sys.getfilesystemencoding()))
+
+
+def pixConvertTo1(pix, threshold=130):
+    """Returns binarized image to 1 bpp."""
+
+    with LeptonicaErrorTrap():
+        return lept.pixConvertTo1(pix, threshold)
 
 
 def pixScale(pix, scalex, scaley):
