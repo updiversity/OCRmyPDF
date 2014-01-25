@@ -87,6 +87,7 @@ lept.getLeptonicaVersion.argtypes = []
 lept.getLeptonicaVersion.restype = C.c_char_p
 
 TEXT_ORIENTATION = ['UNKNOWN', 'UP', 'LEFT', 'DOWN', 'RIGHT']
+TEXT_ORIENTATION_ANGLES = {'UNKNOWN': None, 'UP': 0, 'LEFT': 90, 'DOWN': 180, 'RIGHT': 270}
 
 
 class LeptonicaErrorTrap(object):
@@ -328,11 +329,12 @@ def test_pnm_output():
     for param in params:
         _test_output(*param)
 
+
 def test_orientation():
     from PIL import Image
     from tempfile import NamedTemporaryFile
 
-    im = Image.open('test/test-bw.pbm')
+    im = Image.open('test/test-bw.png')
     for rotation in (0, 90, 180, 270):
         rotated_im = im.rotate(rotation)
         with NamedTemporaryFile(prefix="test-orientation", suffix=".pbm", delete=True) as tmpfile:
@@ -340,9 +342,12 @@ def test_orientation():
 
             pix = pixRead(tmpfile.name)
             confidence = pixOrientDetectDwa(pix, debug=1)
-            stderr(confidence)
             decision = makeOrientDecision(confidence, debug=1)
-            stderr(decision)
 
+            assert rotation == TEXT_ORIENTATION_ANGLES[decision], \
+                "Expected to find a rotation of {0} by Leptonica wants to rotate by {1}".format(
+                    rotation,
+                    TEXT_ORIENTATION_ANGLES[decision] or "(no confidence)")
+            pixDestroy(pix)
 
 
