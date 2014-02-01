@@ -116,6 +116,8 @@ lept.makeOrientDecision.restype = C.c_int32
 # Orthogonal rotation
 lept.pixRotateOrth.argtypes = [PIX, C.c_int32]
 lept.pixRotateOrth.restype = PIX
+lept.pixFlipLR.argtypes = [PIX, PIX]
+lept.pixFlipLR.restype = PIX
 
 # Version
 lept.getLeptonicaVersion.argtypes = []
@@ -288,6 +290,37 @@ def pixRotateOrth(pix, degrees_clockwise):
         return lept.pixRotateOrth(pix, quads)
 
 
+def pixMirrorDetectDwa(pix, mincount=0, debug=0):
+    """Returns confidence that image is correctly oriented (>0) or mirrored (<0).
+
+    It is not necessary to check for up-down flipping, since an orientation
+    check will correct that as well.
+
+    Obviously mirroring is only an issue for scanned microfiche, film, etc.
+
+    A value of -5.0 is high confidence that the image is mirrored.
+
+    """
+    mirror_confidence = C.c_float(0.0)
+
+    with LeptonicaErrorTrap():
+        result = lept.pixMirrorDetectDwa(
+            pix, C.byref(mirror_confidence),
+            mincount, debug)
+    if result != 0:
+        raise LeptonicaError("pixMirrorDetectDwa returned {0}".format(result))
+    return mirror_confidence.value
+
+
+def pixFlipLR(pix):
+    """Flip pix in-place, destroying the original."""
+
+    with LeptonicaErrorTrap():
+        result = lept.pixFlipLR(pix, pix)  # In-place allowed
+    if result is None:
+        raise LeptonicaError("pixFlipLR returned NULL")
+
+
 def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
     """Write pix to the filename, with the extension indicating format.
 
@@ -378,6 +411,14 @@ def orient(args):
         sys.exit(0)
 
     pix_oriented = pixRotateOrth(pix, decision)
+
+    if args.mirror:
+        mirror_confidence = pixMirrorDetectDwa(pix_oriented)
+        if args.verbose:
+            print("orient: mirror confidence {0}".format(mirror_confidence))
+        if mirror_confidence < -5.0:
+            pixFlipLR(pix_oriented)
+
     try:
         pixWriteImpliedFormat(args.outfile, pix_oriented)
     except LeptonicaIOError:
