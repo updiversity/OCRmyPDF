@@ -397,7 +397,7 @@ def orient(args):
 
     if args.check:
         if decision is None:
-            stderr("Warning: could not determine orientation of %s",
+            stderr("Warning: could not determine orientation of %s" %
                    args.infile)
         elif decision != 0:
             stderr(
@@ -406,14 +406,15 @@ def orient(args):
         sys.exit(0)
 
     if decision is None:
-        stderr("Warning: could not determine orientation of %s",
+        stderr("Warning: could not determine orientation of %s" %
                args.infile)
         sys.exit(0)
 
     pix_oriented = pixRotateOrth(pix, decision)
 
     if args.mirror:
-        mirror_confidence = pixMirrorDetectDwa(pix_oriented)
+        pix1_oriented = pixConvertTo1(pix)
+        mirror_confidence = pixMirrorDetectDwa(pix1_oriented)
         if args.verbose:
             print("orient: mirror confidence {0}".format(mirror_confidence))
         if mirror_confidence < -5.0:
