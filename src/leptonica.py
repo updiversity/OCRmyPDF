@@ -169,6 +169,7 @@ class LeptonicaErrorTrap(object):
     def __exit__(self, exc_type, exc_value, traceback):
         # Restore old stderr
         os.dup2(self.old_stderr_fileno, sys.stderr.fileno())
+        os.close(self.old_stderr_fileno)
 
         # Get data from tmpfile (in with block to ensure it is closed)
         with self.tmpfile as tmpfile:
