@@ -439,8 +439,6 @@ def orient(args):
         stderr("Failed to open file: %s" % args.infile)
         sys.exit(2)
 
-    if args.mirror:
-        raise NotImplementedError('--mirror')
 
     pix1 = pixConvertTo1(pix)
 
