@@ -431,7 +431,7 @@ def orient(args):
     confidence = pixOrientDetectDwa(pix1)
     decision = makeOrientDecision(confidence)
     if args.verbose:
-        print("orient: confidence {0}, decision {1}".format(confidence, decision))
+        stderr("orient: confidence {0}, decision {1}".format(confidence, decision))
         pixWriteImpliedFormat("{0}.pix1.tiff".format(args.infile), pix1)
 
     if args.check:
@@ -455,7 +455,7 @@ def orient(args):
         pix1_oriented = pixConvertTo1(pix)
         mirror_confidence = pixMirrorDetectDwa(pix1_oriented)
         if args.verbose:
-            print("orient: mirror confidence {0}".format(mirror_confidence))
+            stderr("orient: mirror confidence {0}".format(mirror_confidence))
         if mirror_confidence < -5.0:
             pixFlipLR(pix_oriented)
 
@@ -487,9 +487,10 @@ def main():
     parser_orient = subparsers.add_parser('orient',
                                           help="correct image orientation")
     parser_orient.add_argument('infile',
-                               help="file to check orientation")
-    parser_orient.add_argument('outfile', nargs='?', default=None,
-                               help="file to check orientation")
+                               help="deskewed file to check orientation")
+    parser_orient.add_argument('outfile',
+                               nargs='?', default=None,
+                               help="output file with fixed orientation")
     parser_orient.add_argument('--check',
                                help="only orientation and report problems",
                                action='store_true')
@@ -501,7 +502,7 @@ def main():
     args = parser.parse_args()
 
     if getLeptonicaVersion() != u'leptonica-1.69':
-        print("Unexpected leptonica version: %s" % getLeptonicaVersion())
+        stderr("Unexpected leptonica version: %s" % getLeptonicaVersion())
 
     args.func(args)
 
