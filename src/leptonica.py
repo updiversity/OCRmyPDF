@@ -95,8 +95,6 @@ lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
 lept.pixConvertTo1.restype = PIX
 lept.pixConvertTo8.argtypes = [PIX, C.c_int32]
 lept.pixConvertTo8.restype = PIX
-lept.pixBackgroundNormSimple.argtypes = [PIX, PIX, PIX]
-lept.pixBackgroundNormSimple.restype = PIX
 lept.pixOtsuThreshOnBackgroundNorm.argtypes = [
     PIX, PIX,
     C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32,
@@ -247,17 +245,6 @@ def pixOtsuThreshOnBackgroundNorm(pix_source, pix_mask=None, tile_size=(10, 15),
     stderr("threshold: {0}".format(used_threshold))
 
     return pix_out
-
-
-def pixBackgroundNormSimple(pix_source, pix_mask=None, pix_grayscale=None):
-    """Normalize image background intensity."""
-
-    # If input is already 1 bpp, return it - no work to do
-    if pix_source.contents.d == 1:
-        return pix_source
-
-    with LeptonicaErrorTrap():
-        return lept.pixBackgroundNormSimple(pix_source, pix_mask, pix_grayscale)
 
 
 def pixScale(pix, scalex, scaley):
