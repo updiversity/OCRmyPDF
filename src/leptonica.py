@@ -253,8 +253,6 @@ def pixOtsuThreshOnBackgroundNorm(pix_source, pix_mask=None, tile_size=(10, 15),
             threshold, mincount, bgval, smooth[0], smooth[1], C.c_float(scorefract),
             C.byref(used_threshold))
 
-    stderr("threshold: {0}".format(used_threshold))
-
     return pix_out
 
 
@@ -467,7 +465,7 @@ def orient(args):
     pix_oriented = pixRotateOrth(pix, decision)
 
     if args.mirror:
-        pix1_oriented = pixConvertTo1(pix)
+        pix1_oriented = pixOtsuThreshOnBackgroundNorm(pix_oriented)
         mirror_confidence = pixMirrorDetectDwa(pix1_oriented)
         if args.verbose:
             stderr("orient: mirror confidence {0}".format(mirror_confidence))
