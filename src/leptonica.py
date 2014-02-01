@@ -439,13 +439,13 @@ def orient(args):
         stderr("Failed to open file: %s" % args.infile)
         sys.exit(2)
 
-
-    pix1 = pixConvertTo1(pix)
+    pix1 = pixOtsuThreshOnBackgroundNorm(pix)
 
     confidence = pixOrientDetectDwa(pix1)
     decision = makeOrientDecision(confidence)
     if args.verbose:
         print("orient: confidence {0}, decision {1}".format(confidence, decision))
+        pixWriteImpliedFormat("{0}.pix1.tiff".format(args.infile), pix1)
 
     if args.check:
         if decision is None:
