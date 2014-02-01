@@ -90,9 +90,19 @@ lept.pixRead.restype = PIX
 lept.pixWriteImpliedFormat.argtypes = [C.c_char_p, PIX, C.c_int32, C.c_int32]
 lept.pixWriteImpliedFormat.restype = C.c_int32
 
-# Conversion
+# Conversion/thresholding
 lept.pixConvertTo1.argtypes = [PIX, C.c_int32]
 lept.pixConvertTo1.restype = PIX
+lept.pixConvertTo8.argtypes = [PIX, C.c_int32]
+lept.pixConvertTo8.restype = PIX
+lept.pixBackgroundNormSimple.argtypes = [PIX, PIX, PIX]
+lept.pixBackgroundNormSimple.restype = PIX
+lept.pixOtsuThreshOnBackgroundNorm.argtypes = [
+    PIX, PIX,
+    C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32, C.c_int32,
+    C.c_float, C.POINTER(C.c_int32)]
+lept.pixOtsuThreshOnBackgroundNorm.restype = PIX
+
 
 # Resampling
 lept.pixScale.argtypes = [PIX, C.c_float, C.c_float]
@@ -206,10 +216,48 @@ def pixRead(filename):
 
 
 def pixConvertTo1(pix, threshold=130):
-    """Returns binarized image to 1 bpp."""
+    """Binarize an image using a fixed global threshold that will ruin most images."""
 
     with LeptonicaErrorTrap():
         return lept.pixConvertTo1(pix, threshold)
+
+
+def pixConvertTo8(pix, colormap=False):
+    """Convert color image to grayscale."""
+
+    with LeptonicaErrorTrap():
+        return lept.pixConvertTo8(pix, colormap)
+
+
+def pixOtsuThreshOnBackgroundNorm(pix_source, pix_mask=None, tile_size=(10, 15), threshold=100,
+                                  mincount=50, bgval=255, smooth=(2, 2), scorefract=0.1):
+    """Binarize an image, accounting for background variation."""
+
+    used_threshold = C.c_int32(0)
+
+    with LeptonicaErrorTrap():
+        if pix_source.contents.d > 8:
+            pix_source = pixConvertTo8(pix_source)
+
+        pix_out = lept.pixOtsuThreshOnBackgroundNorm(
+            pix_source, pix_mask, tile_size[0], tile_size[1],
+            threshold, mincount, bgval, smooth[0], smooth[1], C.c_float(scorefract),
+            C.byref(used_threshold))
+
+    stderr("threshold: {0}".format(used_threshold))
+
+    return pix_out
+
+
+def pixBackgroundNormSimple(pix_source, pix_mask=None, pix_grayscale=None):
+    """Normalize image background intensity."""
+
+    # If input is already 1 bpp, return it - no work to do
+    if pix_source.contents.d == 1:
+        return pix_source
+
+    with LeptonicaErrorTrap():
+        return lept.pixBackgroundNormSimple(pix_source, pix_mask, pix_grayscale)
 
 
 def pixScale(pix, scalex, scaley):
