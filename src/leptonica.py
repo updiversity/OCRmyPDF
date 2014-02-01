@@ -144,6 +144,8 @@ class LeptonicaErrorTrap(object):
     from Leptonica are also suppressed.
 
     """
+    def __init__(self, verbose=False):
+        self.verbose = verbose
 
     def __enter__(self):
         self.tmpfile = TemporaryFile()
@@ -166,6 +168,9 @@ class LeptonicaErrorTrap(object):
         if exc_type:
             stderr(leptonica_output)
             return False
+
+        if self.verbose and leptonica_output.strip() != '':
+            stderr(leptonica_output)
 
         # If there are Leptonica errors, wrap them in Python excpetions
         if 'Error' in leptonica_output:
