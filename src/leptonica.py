@@ -173,7 +173,10 @@ class LeptonicaErrorTrap(object):
                 raise LeptonicaIOError()
             if 'pixWrite: stream not opened' in leptonica_output:
                 raise LeptonicaIOError()
-            raise LeptonicaError(leptonica_output)
+            if 'not enough conf to get orientation' in leptonica_output:
+                pass
+            else:
+                raise LeptonicaError(leptonica_output)
 
         return False
 
@@ -257,8 +260,6 @@ def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0
         result = lept.makeOrientDecision(
             up_confidence, left_confidence, min_up_confidence,
             min_ratio, C.byref(orient), debug)
-    if result != 0:
-        raise LeptonicaError("makeOrientDecision returned {0}".format(result))
     assert 0 <= orient.value < len(TEXT_ORIENTATION)
 
     orientation = TEXT_ORIENTATION[orient.value]
