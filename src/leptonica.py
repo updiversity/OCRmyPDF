@@ -245,6 +245,8 @@ def pixOtsuThreshOnBackgroundNorm(pix_source, pix_mask=None, tile_size=(10, 15),
     with LeptonicaErrorTrap():
         if pix_source.contents.d > 8:
             pix_source = pixConvertTo8(pix_source)
+        elif pix_source.contents.d == 1:
+            return pixConvertTo1(pix_source)
 
         pix_out = lept.pixOtsuThreshOnBackgroundNorm(
             pix_source, pix_mask, tile_size[0], tile_size[1],
