@@ -4,9 +4,8 @@
 # © 2013-14: jbarlow83 from Github (https://github.com/jbarlow83)
 #
 #
-# Use Leptonica to detect find and remove page skew.  Leptonica uses the method
-# of differential square sums, which its author claim is faster and more robust
-# than the Hough transform used by ImageMagick.
+# Lightweight ctypes wrapper for Leptonica image processing library, to
+# support OCRmyPDF.
 
 from __future__ import print_function, absolute_import, division
 import argparse
@@ -76,8 +75,12 @@ lept.pixDestroy.restype = None
 def PIX__del__(self):
     """Destroy a pix object.
 
-    Function signature is pixDestroy(struct Pix **), hence C.byref() is used to
-    pass the address of the pointer.
+    Let Python's garbage collector figure out when to call pixDestroy().
+    Leptonica implements its own reference counting; pixDestroy decrements the
+    reference count if a duplicate object exists.
+
+    Function signature is pixDestroy(struct Pix **), hence C.byref() is used
+    to pass the address of the pointer.
 
     """
     lept.pixDestroy(C.byref(self))
@@ -214,7 +217,12 @@ def pixRead(filename):
 
 
 def pixConvertTo1(pix, threshold=130):
-    """Binarize an image using a fixed global threshold that will ruin most images."""
+    """Binarize an image using a fixed global threshold.
+
+    If the image background varies or contrast is not normalized this will
+    ruin the image.
+
+    """
 
     with LeptonicaErrorTrap():
         return lept.pixConvertTo1(pix, threshold)
@@ -255,6 +263,10 @@ def pixScale(pix, scalex, scaley):
 
 def pixDeskew(pix, reduction_factor=0):
     """Returns the deskewed pix object.
+
+    Leptonica uses the method of differential square sums, which its author
+    claim is faster and more robust than the Hough transform used by
+    ImageMagick.  Testing found this method is about 30-40x times faster.
 
     A clone of the original is returned when the algorithm cannot find a skew
     angle with sufficient confidence.  The skew angle is assumed to be no more
@@ -309,8 +321,8 @@ def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0
 def pixRotateOrth(pix, degrees_clockwise):
     """Returns the input rotated by 90, 180, or 270 degrees clockwise.
 
-    Since makeOrientDecision() returns counter-clockwise degrees, its value may
-    be passed directly to this function.
+    Since makeOrientDecision() returns counter-clockwise degrees, its value
+    may be passed directly to this function.
 
     pix -- all bit depths
     degrees_clockwise -- 0, 90, 180, 270 accepted
@@ -324,7 +336,7 @@ def pixRotateOrth(pix, degrees_clockwise):
         raise ValueError("degrees_clockwise be a multiple of 90 degrees")
 
     quads = int(degrees_clockwise // 90)
-    if not 0 <= quads <= 3:
+    if not quads in range(0, 4):
         raise ValueError("degrees_clockwise must not exceed 360 degrees")
 
     with LeptonicaErrorTrap():
@@ -332,7 +344,7 @@ def pixRotateOrth(pix, degrees_clockwise):
 
 
 def pixMirrorDetectDwa(pix, mincount=0, debug=0):
-    """Returns confidence that image is correctly oriented (>0) or mirrored (<0).
+    """Returns confidence that image is correct (>0) or mirrored (<0).
 
     It is not necessary to check for up-down flipping, since an orientation
     check will correct that as well.
@@ -474,7 +486,7 @@ def main():
     subparsers = parser.add_subparsers(title='commands',
                                        description='supported operations')
 
-    # leptonica.py deskew <infile> <outfile>
+    # leptonica.py deskew
     parser_deskew = subparsers.add_parser('deskew',
                                           help="deskew an image")
     parser_deskew.add_argument('-r', '--dpi', dest='dpi', action='store',
@@ -483,7 +495,7 @@ def main():
     parser_deskew.add_argument('outfile', help='deskewed output image')
     parser_deskew.set_defaults(func=deskew)
 
-    # leptonica.py orient <infile>
+    # leptonica.py orient
     parser_orient = subparsers.add_parser('orient',
                                           help="correct image orientation")
     parser_orient.add_argument('infile',
