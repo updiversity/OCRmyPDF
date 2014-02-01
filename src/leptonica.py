@@ -310,7 +310,7 @@ def makeOrientDecision(confidence, min_up_confidence=0.0, min_ratio=0.0, debug=0
     orient = C.c_int32(-1)
 
     with LeptonicaErrorTrap():
-        result = lept.makeOrientDecision(
+        lept.makeOrientDecision(
             up_confidence, left_confidence, min_up_confidence,
             min_ratio, C.byref(orient), debug)
     assert 0 <= orient.value < len(TEXT_ORIENTATION)
