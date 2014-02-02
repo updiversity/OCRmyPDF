@@ -52,17 +52,17 @@ class _PIX(C.Structure):
     """
 
     _fields_ = [
-        ("w", C.c_uint32),
-        ("h", C.c_uint32),
-        ("d", C.c_uint32),
-        ("wpl", C.c_uint32),
-        ("refcount", C.c_uint32),
-        ("xres", C.c_int32),
-        ("yres", C.c_int32),
-        ("informat", C.c_int32),
-        ("text", C.POINTER(C.c_char)),
-        ("colormap", C.POINTER(_PIXCOLORMAP)),
-        ("data", C.POINTER(C.c_uint32))
+        ("w", C.c_uint32),                      # width (pixels)
+        ("h", C.c_uint32),                      # height (pixels)
+        ("d", C.c_uint32),                      # bit depth
+        ("wpl", C.c_uint32),                    # 32-bit words per line
+        ("refcount", C.c_uint32),               # refcount
+        ("xres", C.c_int32),                    # horiz pixels per inch
+        ("yres", C.c_int32),                    # vertical pixels per inch
+        ("informat", C.c_int32),                # input file format
+        ("text", C.POINTER(C.c_char)),          # associated text string
+        ("colormap", C.POINTER(_PIXCOLORMAP)),  # color palette or NULL
+        ("data", C.POINTER(C.c_uint32))         # raw data
     ]
 
 
