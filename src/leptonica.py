@@ -367,12 +367,10 @@ def pixMirrorDetectDwa(pix, mincount=0, debug=0):
 
 
 def pixFlipLR(pix):
-    """Flip pix in-place, destroying the original."""
+    """Returns a left-right flipped copy of the image."""
 
     with LeptonicaErrorTrap():
-        result = lept.pixFlipLR(pix, pix)  # In-place allowed
-    if result is None:
-        raise LeptonicaError("pixFlipLR returned NULL")
+        return lept.pixFlipLR(None, pix)
 
 
 def pixWriteImpliedFormat(filename, pix, jpeg_quality=0, jpeg_progressive=0):
@@ -470,7 +468,7 @@ def orient(args):
         if args.verbose:
             stderr("orient: mirror confidence {0}".format(mirror_confidence))
         if mirror_confidence < -5.0:
-            pixFlipLR(pix_oriented)
+            pix_oriented = pixFlipLR(pix_oriented)
 
     try:
         pixWriteImpliedFormat(args.outfile, pix_oriented)
