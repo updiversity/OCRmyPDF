@@ -546,27 +546,53 @@ def test_pnm_output():
         _test_output(*param)
 
 
-def test_orientation():
-    from PIL import Image
+from contextlib import contextmanager
+
+
+@contextmanager
+def replaced_args(args):
+    try:
+        saved_args = sys.argv[:]
+        sys.argv = [os.path.basename(__file__)] + args
+        yield
+    finally:
+        sys.argv = saved_args
+
+
+def _test_orient(test_im):
     from tempfile import NamedTemporaryFile
 
-    im = Image.open('test/test-bw.tiff')
-    assert im.mode == '1', "This test requires a monochrome TIFF"
-    for rotation in (0, 90, 180, 270):
-        rotated_im = im.rotate(rotation)
-        with NamedTemporaryFile(prefix="test-orientation", suffix=".tiff", delete=True) as tmpfile:
-            rotated_im.save(tmpfile, "TIFF")
+    with NamedTemporaryFile(prefix="test-orient-", suffix=".tiff", delete=True) as tmpfile:
+        test_im.save(tmpfile, "TIFF")
 
-            pix = pixRead(tmpfile.name)
-            confidence = pixOrientDetectDwa(pix, debug=1)
-            decision = makeOrientDecision(confidence, debug=1)
+        with replaced_args(['orient', '--check', tmpfile.name]):
+            try:
+                main()
+            except SystemExit as e:
+                if e.code != 0:
+                    raise e
 
-            assert rotation == decision, \
-                "Expected to find a rotation of {0}, but Leptonica wants to rotate by {1}".format(
-                    rotation,
-                    decision or "(no confidence)")
+        with NamedTemporaryFile(prefix="test-orient-fixed-", suffix=".tiff", delete=True) as outfile:
+            with replaced_args(['-v', 'orient', '--mirror', tmpfile.name, outfile.name]):
+                try:
+                    main()
+                except SystemExit as e:
+                    if e.code != 0:
+                        raise e
 
 
 def test_orient():
-    sys.argv = [os.path.basename(__file__), '-v', 'orient', 'test/test-bw.tiff', 'test/test-bw.out.tiff']
-    main()
+    from PIL import Image
+
+    im = Image.open('test/Picture_003.jpg')
+
+    for color in ['L', 'RGB', 'CMYK']:
+        converted = im.convert(mode=color)
+        for angle in (0, 90, 180, 270):
+            rotated = converted.rotate(angle)
+            stderr(color + str(angle))
+            _test_orient(rotated)
+
+            mirrored = rotated.transpose(Image.FLIP_LEFT_RIGHT)
+            stderr(color + str(angle) + "LR")
+            _test_orient(mirrored)
