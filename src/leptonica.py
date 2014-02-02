@@ -443,7 +443,6 @@ def orient(args):
     decision = makeOrientDecision(confidence)
     if args.verbose:
         stderr("orient: confidence {0}, decision {1}".format(confidence, decision))
-        pixWriteImpliedFormat("{0}.pix1.tiff".format(args.infile), pix1)
 
     if args.check:
         if decision is None:
@@ -563,7 +562,7 @@ def test_orientation():
             decision = makeOrientDecision(confidence, debug=1)
 
             assert rotation == decision, \
-                "Expected to find a rotation of {0} by Leptonica wants to rotate by {1}".format(
+                "Expected to find a rotation of {0}, but Leptonica wants to rotate by {1}".format(
                     rotation,
                     decision or "(no confidence)")
 
