@@ -559,7 +559,7 @@ def replaced_args(args):
         sys.argv = saved_args
 
 
-def _test_orient(test_im):
+def _test_orient(test_im, test_case=''):
     from tempfile import NamedTemporaryFile
 
     with NamedTemporaryFile(prefix="test-orient-", suffix=".tiff", delete=True) as tmpfile:
@@ -572,7 +572,8 @@ def _test_orient(test_im):
                 if e.code != 0:
                     raise e
 
-        with NamedTemporaryFile(prefix="test-orient-fixed-", suffix=".tiff", delete=True) as outfile:
+        with NamedTemporaryFile(prefix="test-orient-fixed-{0}-".format(test_case),
+                                suffix=".tiff", delete=True) as outfile:
             with replaced_args(['-v', 'orient', '--mirror', tmpfile.name, outfile.name]):
                 try:
                     main()
@@ -586,13 +587,13 @@ def test_orient():
 
     im = Image.open('test/Picture_003.jpg')
 
-    for color in ['L', 'RGB', 'CMYK']:
+    for color in ['1', 'L', 'RGB']:
         converted = im.convert(mode=color)
         for angle in (0, 90, 180, 270):
             rotated = converted.rotate(angle)
-            stderr(color + str(angle))
-            _test_orient(rotated)
+            test_case = "{0}-{1}".format(color, angle)
+            _test_orient(rotated, test_case)
 
             mirrored = rotated.transpose(Image.FLIP_LEFT_RIGHT)
-            stderr(color + str(angle) + "LR")
-            _test_orient(mirrored)
+            test_case = "{0}-{1}-LR".format(color, angle)
+            _test_orient(mirrored, test_case)
