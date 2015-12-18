@@ -98,8 +98,8 @@ def _find_page_images(page, pageinfo):
             image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
 
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
-        image['dpi_w'] = image['width'] / pageinfo['width_inches']
-        image['dpi_h'] = image['height'] / pageinfo['height_inches']
+        image['dpi_w'] = image['width'] / pageinfo['uncropped_width_inches']
+        image['dpi_h'] = image['height'] / pageinfo['uncropped_height_inches']
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
         yield image
 
@@ -140,6 +140,8 @@ def _pdf_get_pageinfo(infile, page: int):
     height_pt = page['/MediaBox'][3] - page['/MediaBox'][1]
     pageinfo['width_inches'] = width_pt / Decimal(72.0)
     pageinfo['height_inches'] = height_pt / Decimal(72.0)
+    pageinfo['uncropped_width_inches'] = page['/MediaBox'][2] / Decimal(72.0)
+    pageinfo['uncropped_height_inches'] = page['/MediaBox'][3] / Decimal(72.0)
 
     pageinfo['images'] = [im for im in _find_page_images(page, pageinfo)]
 
