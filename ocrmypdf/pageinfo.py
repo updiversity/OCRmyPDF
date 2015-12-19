@@ -98,6 +98,9 @@ def _find_page_images(page, pageinfo):
             image['color'] = 'jpx' if image['enc'] == 'jpx' else '?'
 
         image['comp'] = FRIENDLY_COMP.get(image['color'], '?')
+
+        # Since the image dimensions are uncropped, they must be compared
+        # to the uncropped page dimensions to determine the effective DPI
         image['dpi_w'] = image['width'] / pageinfo['uncropped_width_inches']
         image['dpi_h'] = image['height'] / pageinfo['uncropped_height_inches']
         image['dpi'] = (image['dpi_w'] * image['dpi_h']) ** Decimal(0.5)
