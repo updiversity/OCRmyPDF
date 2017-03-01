@@ -28,8 +28,8 @@ before_cache:
 - rm -f $HOME/.cache/pip/log/debug.log
 
 before_install:
-- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./.travis/linux_before_install.sh ; fi
-- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ./.travis/osx_before_install.sh ; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then . .travis/linux_before_install.sh ; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then . .travis/osx_before_install.sh ; fi
 
 install:
 - pip install .
