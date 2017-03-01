@@ -10,12 +10,15 @@ matrix:
   include:
     - os: linux
       sudo: required
+      language: python
       python: 3.4
     - os: linux
       sudo: required
+      language: python
       python: 3.5
     - os: linux
       sudo: required
+      language: python
       python: 3.6
     - os: osx
       osx_image: xcode8
@@ -49,5 +52,5 @@ deploy:
   on:
     branch: master
     tags: true
-    condition: $TRAVIS_PYTHON_VERSION = "3.6" && $TRAVIS_OS_NAME == "linux"
+    condition: $TRAVIS_PYTHON_VERSION == "3.6" && $TRAVIS_OS_NAME == "linux"
   skip_upload_docs: true
