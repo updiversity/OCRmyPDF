@@ -32,8 +32,8 @@ before_install:
 - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then . .travis/osx_before_install.sh ; fi
 
 install:
-- pip install .
-- pip install -r requirements.txt -r test_requirements.txt
+- pip3 install .
+- pip3 install -r requirements.txt -r test_requirements.txt
 
 script:
 - mv ocrmypdf dont_import_this_ocrmypdf
