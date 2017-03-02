@@ -416,6 +416,7 @@ def test_french(spoof_tesseract_cache, resources, outpdf):
     p, out, err = run_ocrmypdf(
         resources / 'francais.pdf', outpdf, '-l', 'fra',
         env=spoof_tesseract_cache)
+    print(os.environ)
     assert p.returncode == ExitCode.ok, \
         "This test may fail if Tesseract language packs are missing"
 
