@@ -5,6 +5,7 @@ cache:
   directories:
   - packages
   - tests/cache
+  - $HOME/Library/Caches/Homebrew
 
 matrix:
   include:
