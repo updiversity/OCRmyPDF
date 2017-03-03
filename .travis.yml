@@ -9,18 +9,18 @@ cache:
 
 matrix:
   include:
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.4
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.5
-    - os: linux
-      sudo: required
-      language: python
-      python: 3.6
+    # - os: linux
+    #   sudo: required
+    #   language: python
+    #   python: 3.4
+    # - os: linux
+    #   sudo: required
+    #   language: python
+    #   python: 3.5
+    # - os: linux
+    #   sudo: required
+    #   language: python
+    #   python: 3.6
     - os: osx
       osx_image: xcode8
       language: generic
@@ -38,7 +38,7 @@ install:
 
 script:
 - mv ocrmypdf dont_import_this_ocrmypdf
-- pytest
+- pytest tests/test_main.py::test_quick
 - mv dont_import_this_ocrmypdf ocrmypdf
 
 after_success:
