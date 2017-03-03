@@ -36,7 +36,7 @@ def running_in_docker():
 
 @pytest.helpers.register
 def running_in_travis():
-    return os.environ.get('TRAVIS')
+    return os.environ.get('TRAVIS') == 'true'
 
 
 TESTS_ROOT = os.path.abspath(os.path.dirname(__file__))
