@@ -11,7 +11,6 @@ brew install python3
 brew install libxml2 libffi leptonica
 brew install unpaper   # optional
 brew install tesseract
-brew install poppler  # for testing only
 
 pip3 install --upgrade pip
 pip3 install wheel
