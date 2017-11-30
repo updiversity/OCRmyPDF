@@ -11,12 +11,10 @@ import os
 import logging
 from tempfile import TemporaryFile
 from ctypes.util import find_library
-from .lib._leptonica import ffi
+from .lib._leptonica import ffi, lib as lept
 from functools import lru_cache
 from enum import Enum
 from .helpers import fspath
-
-lept = ffi.dlopen(find_library('lept'))
 
 logger = logging.getLogger(__name__)
 

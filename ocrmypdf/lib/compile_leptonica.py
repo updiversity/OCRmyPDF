@@ -3,7 +3,10 @@
 from cffi import FFI
 
 ffibuilder = FFI()
-ffibuilder.set_source("ocrmypdf.lib._leptonica", None)
+ffibuilder.set_source(
+    "ocrmypdf.lib._leptonica", 
+    "#include <leptonica/allheaders.h>",
+    libraries=['lept'])
 ffibuilder.cdef("""
 typedef signed char             l_int8;
 typedef unsigned char           l_uint8;
