@@ -35,7 +35,7 @@ if [ ! -f /usr/local/bin/qpdf ]; then
     wget -q $QPDF_RELEASE -O - | tar xz -C qpdf --strip-components=1
     cd qpdf/
 	export PATH="/usr/local/opt/ccache/libexec:$PATH"
-    ./configure
+    ./configure --prefix=/usr
     make -j 2
     sudo make install
     cd ..
