@@ -8,7 +8,6 @@ sudo add-apt-repository ppa:heyarje/libav-11 -y
 sudo apt-get update -qq
 sudo apt-get install -y \
 	ghostscript \
-	qpdf \
 	poppler-utils \
 	libavformat56 \
 	libavcodec56 \
@@ -29,3 +28,6 @@ pip install --upgrade pip
 mkdir -p packages
 [ -f packages/unpaper_6.1-1.deb ] || wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
 sudo dpkg -i packages/unpaper_6.1-1.deb
+
+[ -f packages/qpdf_7.0.0-1_amd64.deb || wget -q 'http://security.ubuntu.com/ubuntu/pool/main/q/qpdf/qpdf_7.0.0-1_amd64.deb' -O packages/qpdf_7.0.0-1_amd64.deb
+sudo dpkg -i packages/qpdf_7.0.0-1_amd64.deb
