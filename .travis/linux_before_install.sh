@@ -26,8 +26,16 @@ sudo apt-get install -y --no-install-recommends \
 
 pip install --upgrade pip
 mkdir -p packages
-[ -f packages/unpaper_6.1-1.deb ] || wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
+wget -q 'https://www.dropbox.com/s/vaq0kbwi6e6au80/unpaper_6.1-1.deb?raw=1' -O packages/unpaper_6.1-1.deb
 sudo dpkg -i packages/unpaper_6.1-1.deb
 
-[ -f packages/qpdf_7.0.0-1_amd64.deb || wget -q 'http://security.ubuntu.com/ubuntu/pool/main/q/qpdf/qpdf_7.0.0-1_amd64.deb' -O packages/qpdf_7.0.0-1_amd64.deb
-sudo dpkg -i packages/qpdf_7.0.0-1_amd64.deb
+if [ ! -f /usr/local/bin/qpdf ]; then
+	export QPDF_RELEASE='https://github.com/qpdf/qpdf/releases/download/release-qpdf-8.0.2/qpdf-8.0.2.tar.gz'
+	mkdir qpdf
+    wget -q $QPDF_RELEASE -O - | tar xz -C qpdf --strip-components=1
+    cd qpdf/
+    ./configure CC="ccache $CC" CXX="ccache $CXX"
+    make -j 2
+    sudo make install
+    cd ..
+fi
