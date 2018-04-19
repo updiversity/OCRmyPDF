@@ -43,7 +43,8 @@ RUN . /appenv/bin/activate; \
 
 # Now copy the application in, mainly to get the test suite.
 # Do this now to make the best use of Docker cache.
-COPY . /application
+ADD . /application
+RUN ls /application
 RUN . /appenv/bin/activate; \
   pip install -r /application/test_requirements.txt
 
